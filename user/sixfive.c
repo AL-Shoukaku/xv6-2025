@@ -68,8 +68,12 @@ main(int argc, char *argv[])
         } 
         // 文件的结尾也是分隔符！
         if (hasNum && (str2int(str) % 5 == 0 || str2int(str) % 6 == 0)) {
-                    write(1, str, strlen(str));
-                    write(1, "\n", 1);
+            while (*str == '0' && *(str + 1) != '\0') {
+                str++;
+           }
+ 
+            write(1, str, strlen(str));
+            write(1, "\n", 1);
         }
     }
     exit(0);
