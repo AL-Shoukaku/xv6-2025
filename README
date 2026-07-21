@@ -1,3 +1,4 @@
+//官方README文件，Makefile要求必须有这个文件存在，否则无法正常启动xv6
 xv6 is a re-implementation of Dennis Ritchie's and Ken Thompson's Unix
 Version 6 (v6).  xv6 loosely follows the structure and style of v6,
 but is implemented for a modern RISC-V multiprocessor using ANSI C.
