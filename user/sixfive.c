@@ -44,10 +44,11 @@ main(int argc, char *argv[])
         char *str = (char *)malloc(sizeof(char *));
         *str = '\0';
         int hasNum = 0; //分隔符间是否有数字
+        int hasOther = 0;
         while (read(fd, c, 1) == 1) {
             if (isSeparators(*c)) {
                 //两个分隔符间有数字，且是5或6的倍数
-                if (hasNum && (str2int(str) % 5 == 0 || str2int(str) % 6 == 0)) {
+                if (hasNum && !hasOther && (str2int(str) % 5 == 0 || str2int(str) % 6 == 0)) {
                     while (*str == '0' && *(str + 1) != '\0') {
                         str++;
                     }
@@ -56,12 +57,14 @@ main(int argc, char *argv[])
                 }
                 hasNum = 0;
                 *str = '\0';
-            } else if (isNum(*c)) {
+                hasOther = 0;
+            } else if (isNum(*c) && hasOther == 0) {
                 hasNum = 1;
                 str[strlen(str) + 1] = '\0';
                 str[strlen(str)] = *c;
             } else {
                 //不是数字也不是分隔符，则不满足要求，不输出
+                hasOther = 1;
                 hasNum = 0;
                 *str = '\0';
             }
