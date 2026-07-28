@@ -1,0 +1,39 @@
+1. Looking at the backtrace output, which function called syscall?
+
+backtrace的输出为：
+#0 syscall () at kernel/syscall.c:133
+#1 0x0000000080001aa6 in usertrap () at kernel/trap.c:68
+#2 0x00000003fffffff09c in ?? ()
+
+#0 是 syscall 函数，它的调用者应该在 #1 中，根据信息可知是 kernel/trap.c 中 68 行的 usertrap() 调用了 syscall
+
+2. What is the value of p->trapframe->a7 and what does that value represent? (Hint: look at user/init.c, the first user program xv6 starts, and its compiled assembly user/init.asm.)
+使用 print p->trapframe->a7 可知其值为15
+
+trapframe中存的是陷入时的状态信息，在 syscall 中 a7 寄存器的值代表着系统调用号.
+
+从kernel/syscall.h中可以查到SYS_open = 15,因此这里p->trapframe->a7的值代表着当前要进行的系统调用是open()
+
+
+3. What was the previous mode that the CPU was in?
+p /x $sstatus的结果为：
+$2 = 0x200000022
+
+可以看到第8位SPP的值为0，这代表着陷入以前CPU处于用户模式。
+
+4. Write down the assembly instruction the kernel is panicing at. Which register corresponds to the variable num?
+在kernel/kernel.asm中搜索80001cf8可以查到指令：
+lw	a3,0(zero) # 0 <_entry-0x80000000>
+这表明存访num的寄存器为a3
+
+5. Why does the kernel crash? Hint: look at figure 3-3 in the text; is address 0 mapped in the kernel address space? Is that confirmed by the value in scause above? (See description of scause in RISC-V privileged instructions)
+
+导致异常的指令是 lw	a3,0(zero) 。根据 xv6 的内核地址空间的映射关系可知地址 0 处没有映射到任何物理地址，因此访问该地址会发生异常导致内核崩溃。
+
+scause寄存器的值为 0xd 。根据 RISC-V 架构手册可知对应的异常原因为 load page fault 。
+
+6. What is the name of the process that was running when the kernel paniced? What is its process id (pid)?
+
+通过 p p->name 得知当前进程的名字为"init"
+
+通过 p p->pid 得知当前进程的pid为1

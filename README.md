@@ -31,6 +31,12 @@ make GRADEFLAGS=name grade
 
 ## 已实现的功能
 
+### 1.Using gdb(easy)
+
+**涉及文件：answers-syscall.txt**
+
+这部分主要是学习使用 gdb 来调试 xv6 系统，并回答 6 个问题，问题与答案已经写在`answers-syscall.txt`中。
+
 ---
 
 ## 参考资料
