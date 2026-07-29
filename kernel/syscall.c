@@ -138,7 +138,17 @@ syscall(void)
 
   num = p->trapframe->a7;
 
-  if(((1 << num) & (p->mask)) != 0) {
+  int safePath = 0;
+
+  if ((num == SYS_open || num == SYS_exec)) {
+    char path[MAXPATH];
+    argstr(0, path, MAXPATH);
+    if (strncmp(p->path, path, MAXPATH) == 0) {
+      safePath = 1;
+    }
+  }
+
+  if(((1 << num) & (p->mask)) != 0 && !safePath) {
     printf("sandbox:syscall not allow!\n");
     p->trapframe->a0 = -1;
     return;

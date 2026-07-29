@@ -278,6 +278,8 @@ kfork(void)
 
   //复制parent的mask
   np->mask = p->mask;
+  //复制parent的path
+  safestrcpy(np->path, p->path, sizeof(p->path));
 
   // Cause fork to return 0 in the child.
   np->trapframe->a0 = 0;

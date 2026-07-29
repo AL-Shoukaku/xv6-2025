@@ -76,6 +76,17 @@ int interpose(int mask,const char *path);
 
 `mask`为掩码，`path`在此处恒定为`-`，用于指定该进程禁用的系统调用，成功时返回 0 .
 
+### 3.Sandbox with allowed pathnames(easy)
+
+这一部分是让`sandbox`支持`path`参数
+
+```bash
+sandbox <mask> <path> <cmd> <arg1> <arg2> ...
+```
+- `path`:指定安全路径
+
+如果系统调用为`open()`或`exec()`，且被掩码`mask`所禁止，同时该调用的路径与`path`相同，则应当允许该调用的执行。
+
 ---
 
 ## 参考资料

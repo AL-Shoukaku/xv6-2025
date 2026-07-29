@@ -107,4 +107,5 @@ struct proc {
 
   //sandbox
   uint64 mask;
+  char path[MAXPATH];
 };
