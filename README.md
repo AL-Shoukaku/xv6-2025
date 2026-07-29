@@ -6,7 +6,7 @@
 
 ## 实验概览
 
-本实验的核心内容是
+本实验的核心内容是熟悉用 gdb 调试 xv6 内核的方法以及在 xv6 中实现系统调用的整个流程，最后用一个攻击 xv6 的任务来展现内核 bug 可能会带来的严重后果。
 
 ---
 ## 开发环境
@@ -23,9 +23,6 @@ make qemu
 
 # 运行官方测试
 make grade
-
-# 针对单个任务进行测试
-make GRADEFLAGS=name grade
 ```
 ---
 
@@ -87,6 +84,30 @@ sandbox <mask> <path> <cmd> <arg1> <arg2> ...
 
 如果系统调用为`open()`或`exec()`，且被掩码`mask`所禁止，同时该调用的路径与`path`相同，则应当允许该调用的执行。
 
+### 4.Attack xv6 (moderate)
+
+**涉及文件：`user/secret.c`,`user/attack.c`,`kernel/vm.c`,`kernel/kalloc.c`**
+
+在`kernel/vm.c`和`kernel/kalloc.c`中有三处在 lab2 中编译时会被省略掉的代码，这回导致内核在释放和申请内存页面时不会对页面内容进行清空。
+
+#### secret
+
+```bash
+secret <content>
+```
+- `content`:要进行保密的内容。
+
+`secret`指令会申请 8 * 4096 bit的内存空间，并在最开始加入`"This may help."`，随后放入`content`的内容
+
+#### attack
+
+```bash
+attack
+```
+
+`attack`命令会输出上一次`secret`命令中的`content`内容，**一般要使用两次才能生效**。
+
+
 ---
 
 ## 参考资料
@@ -98,6 +119,27 @@ sandbox <mask> <path> <cmd> <arg1> <arg2> ...
 ## 测试结果
 以下是`make grade`的测试结果
 ```bash
-
-
+== Test answers-syscall.txt ==
+answers-syscall.txt: OK
+== Test sandbox_mask ==
+$ make qemu-gdb
+sandbox_mask: OK (2.9s)
+== Test sandbox_fork ==
+$ make qemu-gdb
+sandbox_fork: OK (0.3s)
+== Test sandbox_path ==
+$ make qemu-gdb
+sandbox_path: OK (1.1s)
+== Test sandbox_most ==
+$ make qemu-gdb
+sandbox_most: OK (0.6s)
+== Test sandbox_minus ==
+$ make qemu-gdb
+sandbox_minus: OK (1.1s)
+== Test attack ==
+$ make qemu-gdb
+attack: OK (1.0s)
+== Test time ==
+time: OK
+Score: 45/45
 ```
