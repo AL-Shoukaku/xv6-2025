@@ -1,0 +1,45 @@
+1. For every page table entry in the print_pgtbl output, explain what it logically contains and what its permission bits are. 
+Figure 3.4 in the xv6 book might be helpful, although note that the figure might have a slightly different set of pages than 
+process that's being inspected here. Note that xv6 doesn't place the virtual pages consecutively in physical memory.
+
+pgtbltest 的输出如下：
+va 0x0 pte 0x21FC885B pa 0x87F22000 perm 0x5B
+va 0x1000 pte 0x21FC7C5B pa 0x87F1F000 perm 0x5B
+va 0x2000 pte 0x21FC7817 pa 0x87F1E000 perm 0x17
+va 0x3000 pte 0x21FC7407 pa 0x87F1D000 perm 0x7
+va 0x4000 pte 0x21FC70D7 pa 0x87F1C000 perm 0xD7
+va 0x5000 pte 0x0 pa 0x0 perm 0x0
+va 0x6000 pte 0x0 pa 0x0 perm 0x0
+va 0x7000 pte 0x0 pa 0x0 perm 0x0
+va 0x8000 pte 0x0 pa 0x0 perm 0x0
+va 0x9000 pte 0x0 pa 0x0 perm 0x0
+va 0x3FFFFF6000 pte 0x0 pa 0x0 perm 0x0
+va 0x3FFFFF7000 pte 0x0 pa 0x0 perm 0x0
+va 0x3FFFFF8000 pte 0x0 pa 0x0 perm 0x0
+va 0x3FFFFF9000 pte 0x0 pa 0x0 perm 0x0
+va 0x3FFFFFA000 pte 0x0 pa 0x0 perm 0x0
+va 0x3FFFFFB000 pte 0x0 pa 0x0 perm 0x0
+va 0x3FFFFFC000 pte 0x0 pa 0x0 perm 0x0
+va 0x3FFFFFD000 pte 0x0 pa 0x0 perm 0x0
+va 0x3FFFFFE000 pte 0x21FD08C7 pa 0x87F42000 perm 0xC7
+va 0x3FFFFFF000 pte 0x2000184B pa 0x80006000 perm 0x4B
+
+对于每一行，va代表虚拟地址，pte代表最低级页目录中页表项的内容，pa表示该页映射到的物理地址(pte 的10-43位 + 低 12 位 0)，perm代表该页的权限(pte的低 10 位)
+
+低 10 位的权限从高到低分别为：RSW(8-9),D,A,G,U,X,W,R,V
+
+所以对于第 1,2 页，它们的权限为 00_0101_1011,即V,R,X,U,A,说明这部分是可读可运行的，对应的是程序的代码段(text)
+
+对于第 3 页(va 0x2000)，权限为 00_0001_0111,是可读可写但不可运行的，这一部分对应程序的数据段(data)
+
+对于第 4 页(va 0x3000),权限为 00_0000_0111,是可读可写但不可运行的，并且无法在用户状态访问，这一段对应栈的保护页(guard page)，用于防止栈溢出
+
+对于第 5 页(va 0x4000),权限为 00_1101_0111,是可读可写不可运行并且被修改过，对应的是程序的堆栈(stack)
+
+对于第 6 - 10 页(va 0x5000 - 0x9000)，这几页权限位都是 0 ，代表该地址没有映射到任何物理地址，是无效的。
+
+对于倒数第10 - 第3页，(va 0x3FFFFF6000 - 0x3FFFFFD000),权限位同样为 0，是无效的。
+
+倒数第 2 页(va 0x3FFFFFE000)，权限为00_1010_0111,这一段可读可写但不可运行，无法在用户态访问，对应程序的 trapfram 段
+
+倒数第一页(va 0x3FFFFFF000),权限为 00_0010_1011，是可读可运行但不可写的，对应程序的跳板页(trampoline)
