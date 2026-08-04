@@ -43,3 +43,7 @@ va 0x3FFFFFF000 pte 0x2000184B pa 0x80006000 perm 0x4B
 倒数第 2 页(va 0x3FFFFFE000)，权限为00_1010_0111,这一段可读可写但不可运行，无法在用户态访问，对应程序的 trapfram 段
 
 倒数第一页(va 0x3FFFFFF000),权限为 00_0010_1011，是可读可运行但不可写的，对应程序的跳板页(trampoline)
+
+2. Which other xv6 system call(s) could be made faster using this shared page? Explain how.
+
+uptime()这个系统调用可以用相同的方法加速，例如我们可以将ticks这个内核才能访问的属性，映射到用户空间中的一个地址，这样可以直接在用户空间访问，调用时无需进入内核
