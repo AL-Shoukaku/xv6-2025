@@ -135,6 +135,14 @@ kexec(char *path, char **argv)
   p->trapframe->sp = sp; // initial stack pointer
   proc_freepagetable(oldpagetable, oldsz);
 
+  //先申请一个物理页，然后与虚拟地址建立映射
+  void *pa = kalloc();
+  struct usyscall* usyscall =  (struct usyscall *)pa;
+  usyscall->pid = p->pid;
+  if(mappages(p->pagetable, USYSCALL, PGSIZE, (uint64)pa, PTE_R | PTE_U) < 0) {
+    printf("usyscall:映射失败！");
+  }
+
   return argc; // this ends up in a0, the first argument to main(argc, argv)
 
  bad:

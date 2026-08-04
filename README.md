@@ -65,6 +65,21 @@ va 0x3FFFFFE000 pte 0x21FD08C7 pa 0x87F42000 perm 0xC7
 va 0x3FFFFFF000 pte 0x2000184B pa 0x80006000 perm 0x4B
 ```
 
+### 2. Speed up system calls (easy)
+
+**涉及文件：`user/ulib.c`,`kernel/proc.c`,`kernel/exec.c`**
+
+这一部分我们需要优化 xv6 中`getpid()`系统调用的性能。原本`getpid()`系统调用需要进行两次用户态和内核态的切换，而在本体中我们需要对每一个进程都在地址`USYSCALL`(定义于`kernel/memlayout.h`)处映射一页代码，并在该页的起始处存储一个`struct usyscall`结构体，里面包含了进程的`pid`.
+
+这样就可以使用在用户态下的`ugetpid()`函数直接读取`USYSCALL`地址处的`pid`，从而避免了陷入内核的开销。
+
+在运行`pgtbltest`时，我们能看到以下输出：
+
+```bash
+print_kpgtbl starting
+print_kpgtbl: OK
+```
+
 ### xxx
 **涉及文件: d**
 

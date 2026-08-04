@@ -140,6 +140,14 @@ found:
     return 0;
   }
 
+  //先申请一个物理页，然后与虚拟地址建立映射
+  void *pa = kalloc();
+  struct usyscall* usyscall =  (struct usyscall *)pa;
+  usyscall->pid = p->pid;
+  if(mappages(p->pagetable, USYSCALL, PGSIZE, (uint64)pa, PTE_R | PTE_U) < 0) {
+    printf("usyscall:映射失败！");
+  }
+
   // Set up new context to start executing at forkret,
   // which returns to user space.
   memset(&p->context, 0, sizeof(p->context));
@@ -212,6 +220,7 @@ proc_freepagetable(pagetable_t pagetable, uint64 sz)
 {
   uvmunmap(pagetable, TRAMPOLINE, 1, 0);
   uvmunmap(pagetable, TRAPFRAME, 1, 0);
+  uvmunmap(pagetable, USYSCALL, 1, 1);  //do_free为 1，表示解除映射时同时释放该物理内存
   uvmfree(pagetable, sz);
 }
 
