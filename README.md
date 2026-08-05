@@ -6,6 +6,9 @@
 
 ## 实验概览
 
+本次实验的主题是 xv6 系统中的页表机制，主要包括**页表的打印与内容解析**，通过**共享页面**来加速系统调用，以及在在原有基础上实现**超级页**。
+
+可以在`task.md`中查看整个实验内容。
 
 ---
 ## 开发环境
@@ -22,10 +25,8 @@ make qemu
 
 # 运行官方测试
 make grade
-
-# 针对单个任务进行测试
-make GRADEFLAGS=name grade
 ```
+
 ---
 
 ## 已实现的功能
@@ -114,6 +115,22 @@ print_kpgtbl: OK
 
 ### 4. Use superpages (moderate)/(hard)
 
+**涉及文件：`kernel/defs.h`,`kernel/vm.c`,`kernel/kalloc.c`**
+
+这一部分在 xv6 系统中实现了**超级页(superpage)**功能。
+
+在`kernel/kalloc.c`中修改了内存的初始化逻辑，将128MB中的前64MB作为普通页的内存池，后64MB作为超级页的内存池。
+
+在`kernel/kalloc.c`中实现了`superalloc()`,`superfree()`等用于**分配和释放**超级页的函数。
+
+在`kernel/vm.c`中实现`supermappages()`,用于映射超级页
+
+修改`kernel/vm.c`中`uvmalloc()`的逻辑，当内存需求大于 2MB 时，会使用超级页。
+
+修改`kernel/vm.c`中`uvmcopy()`的逻辑，实现`fork()`时，如果父进程采用了超级页，则子进程同样使用超级页。
+
+修改`kernel/vm.c`中`uvmunmap()`的逻辑，支持解除超级页的映射，以及将超级页降级为普通页。
+
 ---
 
 ## 参考资料
@@ -125,5 +142,21 @@ print_kpgtbl: OK
 ## 测试结果
 以下是`make grade`的测试结果
 ```bash
-
+== Test pgtbltest ==
+$ make qemu-gdb
+(5.1s)
+== Test   pgtbltest: ugetpid ==
+  pgtbltest: ugetpid: OK
+== Test   pgtbltest: print_kpgtbl ==
+  pgtbltest: print_kpgtbl: OK
+== Test   pgtbltest: superpg ==
+  pgtbltest: superpg: OK
+== Test answers-pgtbl.txt ==
+answers-pgtbl.txt: OK
+== Test usertests ==
+$ make qemu-gdb
+(57.5s)
+== Test time ==
+time: OK
+Score: 41/41
 ```
