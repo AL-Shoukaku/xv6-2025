@@ -47,3 +47,37 @@ va 0x3FFFFFF000 pte 0x2000184B pa 0x80006000 perm 0x4B
 2. Which other xv6 system call(s) could be made faster using this shared page? Explain how.
 
 uptime()这个系统调用可以用相同的方法加速，例如我们可以将ticks这个内核才能访问的属性，映射到用户空间中的一个地址，这样可以直接在用户空间访问，调用时无需进入内核
+
+3. For every leaf page in the vmprint output, explain what it logically contains and what its permission bits are,
+ and how it relates to the output of the earlier print_pgtbl() exercise above. Figure 3.4 in the xv6 book might be helpful, 
+ although note that the figure might have a slightly different set of pages than the process that's being inspected here.
+
+vmprint的输出如下：
+page table 0x0000000087f22000
+..0x0000000000000000: pte 0x0000000021fc7801 pa 0x0000000087f1e000
+.. ..0x0000000000000000: pte 0x0000000021fc7401 pa 0x0000000087f1d000
+.. .. ..0x0000000000000000: pte 0x0000000021fc7c5b pa 0x0000000087f1f000
+.. .. ..0x0000000000001000: pte 0x0000000021fc705b pa 0x0000000087f1c000
+.. .. ..0x0000000000002000: pte 0x0000000021fc6cd7 pa 0x0000000087f1b000
+.. .. ..0x0000000000003000: pte 0x0000000021fc6807 pa 0x0000000087f1a000
+.. .. ..0x0000000000004000: pte 0x0000000021fc64d7 pa 0x0000000087f19000
+..0x0000003fc0000000: pte 0x0000000021fc8401 pa 0x0000000087f21000
+.. ..0x0000003fffe00000: pte 0x0000000021fc8001 pa 0x0000000087f20000
+.. .. ..0x0000003fffffd000: pte 0x0000000021fd4853 pa 0x0000000087f52000
+.. .. ..0x0000003fffffe000: pte 0x0000000021fd00c7 pa 0x0000000087f40000
+.. .. ..0x0000003ffffff000: pte 0x000000002000184b pa 0x0000000080006000
+print_kpgtbl: OK
+
+可以看到 va 0x0000 - 0x1000 两个 0x5b 结尾的页表项对应程序的代码段
+
+va 0x2000 权限为 0xd7,对应程序的数据段，且被修改过。
+
+va 0x3000 权限为 0x7,对应guard page
+
+va 0x4000 权限同样为 0xd7,对应堆栈段
+
+va 0x3fffffd000 权限为 0x53，是用户态只读，这对应了我们第二题中的USYSCALL段
+
+va 0x3fffffe000 权限为 0xc7, 对应trapframe段
+
+va 0x3ffffff000 权限为 0x4b，对应trampoline段

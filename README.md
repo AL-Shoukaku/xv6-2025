@@ -80,13 +80,39 @@ print_kpgtbl starting
 print_kpgtbl: OK
 ```
 
-### xxx
-**涉及文件: d**
+### 3. Print a page table (easy)
 
-**使用方法:**
+**涉及文件：`kernel/vm.c`**
 
+实现`vmprint()`函数，打印当前进程的页表信息，输出如下：
 
-**功能:** 
+```bash
+print_kpgtbl starting
+page table 0x0000000087f22000
+..0x0000000000000000: pte 0x0000000021fc7801 pa 0x0000000087f1e000
+.. ..0x0000000000000000: pte 0x0000000021fc7401 pa 0x0000000087f1d000
+.. .. ..0x0000000000000000: pte 0x0000000021fc7c5b pa 0x0000000087f1f000
+.. .. ..0x0000000000001000: pte 0x0000000021fc705b pa 0x0000000087f1c000
+.. .. ..0x0000000000002000: pte 0x0000000021fc6cd7 pa 0x0000000087f1b000
+.. .. ..0x0000000000003000: pte 0x0000000021fc6807 pa 0x0000000087f1a000
+.. .. ..0x0000000000004000: pte 0x0000000021fc64d7 pa 0x0000000087f19000
+..0x0000003fc0000000: pte 0x0000000021fc8401 pa 0x0000000087f21000
+.. ..0x0000003fffe00000: pte 0x0000000021fc8001 pa 0x0000000087f20000
+.. .. ..0x0000003fffffd000: pte 0x0000000021fd4853 pa 0x0000000087f52000
+.. .. ..0x0000003fffffe000: pte 0x0000000021fd00c7 pa 0x0000000087f40000
+.. .. ..0x0000003ffffff000: pte 0x000000002000184b pa 0x0000000080006000
+print_kpgtbl: OK
+```
+
+第一行是页表**基地址**，剩下的每一行是一个**有效的**页表项，输出对应的**虚拟地址、页表项、物理地址**。
+
+通过`".."`的数量来体现该页表项所处的层级。
+
+此外还在`answers-pgblt.txt`中回答了如下问题：
+
+> For every leaf page in the vmprint output, explain what it logically contains and what its permission bits are, and how it relates to the output of the earlier print_pgtbl() exercise above. Figure 3.4 in the xv6 book might be helpful, although note that the figure might have a slightly different set of pages than the process that's being inspected here.
+
+### 4. Use superpages (moderate)/(hard)
 
 ---
 
