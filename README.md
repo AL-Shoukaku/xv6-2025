@@ -65,6 +65,35 @@ make grade
 
 ### 2. Backtrace (moderate)
 
+**涉及文件：`kernel/printf.c`**
+
+#### 具体功能
+
+在`kernel/printf.c`中实现`backtrace()`函数，该函数使用帧指针遍历内核栈，通过打印每一个函数的返回地址来反应当前的**函数调用关系**。
+
+该函数插入到了`sys_pause()`,而`bttest`程序会调用`sys_pause`,其输出如下：
+
+```bash
+backtrace:
+0x0000000080001e9c
+0x0000000080001d18
+0x0000000080001a9c
+```
+
+#### 测试方法
+
+拿到`bttest`输出的地址后，退出 xv6 ，在终端输入`addr2line -e kernel/kernel`,然后把刚刚的地址逐个输入进去，可以得到：
+
+```bash
+project_path/xv6-labs-2025/kernel/sysproc.c:85
+project_path/xv6-labs-2025/kernel/syscall.c:141 (discriminator 1)
+project_path/xv6-labs-2025/kernel/trap.c:80
+```
+
+### 3. Alarm (hard)
+
+
+
 ---
 
 ## 参考资料

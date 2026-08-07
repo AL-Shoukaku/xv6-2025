@@ -149,3 +149,17 @@ printfinit(void)
 {
   initlock(&pr.lock, "pr");
 }
+
+void
+backtrace()
+{
+  printf("backtrace:\n");
+  uint64 *s0 = (uint64 *)r_fp();
+  while(1) {
+    printf("%p\n",(uint64 *)*(s0 - 1));
+    if (*(s0 - 2) % PGSIZE == 0) {
+      break;
+    }
+    s0 = (uint64 *)*(s0 - 2);
+  }
+}
