@@ -92,7 +92,58 @@ project_path/xv6-labs-2025/kernel/trap.c:80
 
 ### 3. Alarm (hard)
 
+**核心文件：`kernel/trap.c`,`kernel/sysproc.c`**
 
+#### 具体功能
+
+实现了两个系统调用：`sigalarm`和`sigreturn`，其功能是**在指定时间间隔后调用用户自定义的处理函数**。
+
+```C
+sigalarm(int ticks, void (*handler)())
+```
+
+其功能是设置一个定时器，每隔`ticks`个时钟周期调用一次用户自定义的处理函数`handler`。
+
+当调用`sigalarm(0, 0)`时，表示关闭定时器。
+
+```C
+sigreturn()
+```
+
+我们要求在用户自定义的处理函数执行完毕后，必须调用`sigreturn()`来返回到时钟中断前原来的执行位置。
+
+#### 测试方法
+
+测试代码在`user/usertest.c`中，其运行结果如下：
+
+```bash
+test0 start
+................................alarm!
+test0 passed
+test1 start
+....alarm!
+...alarm!
+...alarm!
+...alarm!
+...alarm!
+....alarm!
+...alarm!
+...alarm!
+..alarm!
+....alarm!
+test1 passed
+test2 start
+............................................alarm!
+test2 passed
+test3 start
+test3 passed
+```
+
+可以在 xv6 启动后执行`usertests -q`来判断新增功能对原有功能是否有影响，最后能看到如下字样即可。
+
+```bash
+ALL TESTS PASSED
+```
 
 ---
 
@@ -105,5 +156,26 @@ project_path/xv6-labs-2025/kernel/trap.c:80
 ## 测试结果
 以下是`make grade`的测试结果
 ```bash
-
+== Test answers-traps.txt ==
+answers-traps.txt: OK
+== Test backtrace test ==
+$ make qemu-gdb
+backtrace test: OK (3.0s)
+== Test running alarmtest ==
+$ make qemu-gdb
+(3.8s)
+== Test   alarmtest: test0 ==
+  alarmtest: test0: OK
+== Test   alarmtest: test1 ==
+  alarmtest: test1: OK
+== Test   alarmtest: test2 ==
+  alarmtest: test2: OK
+== Test   alarmtest: test3 ==
+  alarmtest: test3: OK
+== Test usertests ==
+$ make qemu-gdb
+usertests: OK (70.6s)
+== Test time ==
+time: OK
+Score: 95/95
 ```
