@@ -1,0 +1,61 @@
+1. Which registers contain arguments to functions? For example, which register holds 13 in main's call to printf?
+
+  printf("%d %d\n", f(8)+1, 13);
+  24:	4635                	li	a2,13
+  26:	45b1                	li	a1,12
+  28:	00001517          	auipc	a0,0x1
+  2c:	88850513          	addi	a0,a0,-1912 # 8b0 <malloc+0x106>
+  30:	6c6000ef          	jal	6f6 <printf>
+
+  从这里可以看到分别用 a1,a2 寄存器分别存储了传递给 printf 的 12，13这两个参数，用 a0存储了"%d %d\n"的地址，因此riscv中优先使用a0 - a7寄存器来存储函数的参数。
+
+2. Where is the call to function f in the assembly code for main? Where is the call to g? (Hint: the compiler may inline functions.)
+
+  24:	4635                	li	a2,13
+  26:	45b1                	li	a1,12
+
+  这一部分就是在 main 函数中对于 f 和 g 的调用，对于这种内联函数编译器已经提前帮我们算好了结果，因此只需要将它们存入寄存器中准备传递给printf，不需要使用call。
+
+3. At what address is the function printf located?
+
+00000000000006f6 <printf>:
+
+void
+printf(const char *fmt, ...)
+{
+// ...
+}
+ 720:	60e2                	ld	ra,24(sp)
+ 722:	6442                	ld	s0,16(sp)
+ 724:	6125                	addi	sp,sp,96
+ 726:	8082                	ret
+
+从这里可以看到 printf 函数的地址在 0x6f6
+
+4. What value is in the register ra just after the jalr to printf in main?
+
+实际上编译器最终编译出的结果使用的是 jal ，但与jalr相同在跳转后都将下一个指令的地址存入 ra寄存器，因此跳转后 ra 的值为 0x34
+
+5. Run the following code.
+
+	unsigned int i = 0x00646c72;
+	printf("H%x Wo%s", 57616, (char *) &i);
+      
+  What is the output?
+
+  运行结果是：HE110 World
+
+  首先会输出一个'H'，然后会以16进制输出57616，因此会输出E110,然后我们会以字符的形式来理解i中的值，0x72对应 r，0x6c对应l,0x64对应d
+
+  如果改为大端存储，我们需要将 i 改为 0x726c6400 来获得相同的输出结果，因为大端存储中地址低位存放字节的高位，而输出字符串是从地址低位开始的
+
+  我们不需要改变 57616 ，因为如果改为大端存储，输出一个整数时 printf 会自动帮我调整好顺序
+
+6. In the following code, what is going to be printed after 'y='? (note: the answer is not a specific value.) Why does this happen?
+
+	printf("x=%d y=%d", 3);
+
+  在编译时，这行代码会直接报错，因为传递的参数个数小于占位符的个数。
+
+  如果忽略编译错误，y 输出的值是不确定的，因为调用 printf 时，y对应的值来自 a2 寄存器，但是我们只给 a0 和 a1 两个寄存器传递了参数，
+  因此 a2 寄存器的值取决于调用之前的运行情况，时不确定的。
