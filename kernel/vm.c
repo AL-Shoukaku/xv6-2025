@@ -17,6 +17,9 @@ extern char etext[];  // kernel.ld sets this to end of kernel code.
 
 extern char trampoline[]; // trampoline.S
 
+extern uint64 reference[];
+extern struct spinlock referlock;
+
 // Make a direct-map page table for the kernel.
 pagetable_t
 kvmmake(void)
@@ -299,7 +302,7 @@ uvmcopy(pagetable_t old, pagetable_t new, uint64 sz)
   pte_t *pte;
   uint64 pa, i;
   uint flags;
-  char *mem;
+  //char *mem;
 
   for(i = 0; i < sz; i += PGSIZE){
     if((pte = walk(old, i, 0)) == 0)
@@ -307,14 +310,24 @@ uvmcopy(pagetable_t old, pagetable_t new, uint64 sz)
     if((*pte & PTE_V) == 0)
       continue;   // physical page hasn't been allocated
     pa = PTE2PA(*pte);
+
+    if ((*pte & PTE_W) != 0) {
+      //如果原来可写，则将可写位置0，写时复制位置为 1
+      *pte = *pte & ~PTE_W;
+      *pte = *pte | PTE_COW;
+      sfence_vma(); //刷新父进程TLB
+    }
     flags = PTE_FLAGS(*pte);
-    if((mem = kalloc()) == 0)
-      goto err;
-    memmove(mem, (char*)pa, PGSIZE);
-    if(mappages(new, i, PGSIZE, (uint64)mem, flags) != 0){
-      kfree(mem);
+    //if((mem = kalloc()) == 0)
+    //  goto err;
+    //memmove(mem, (char*)pa, PGSIZE);
+    if(mappages(new, i, PGSIZE, pa, flags) != 0){ //映射到原来的物理地址
+      //kfree(mem);
       goto err;
     }
+    acquire(&referlock);
+    reference[PHYSNUM(pa)]++; //共享时增加引用数量
+    release(&referlock);
   }
   return 0;
 
@@ -359,8 +372,29 @@ copyout(pagetable_t pagetable, uint64 dstva, char *src, uint64 len)
 
     pte = walk(pagetable, va0, 0);
     // forbid copyout over read-only user text pages.
-    if((*pte & PTE_W) == 0)
-      return -1;
+    if((*pte & PTE_W) == 0) {
+      if ((*pte & PTE_COW) != 0) {
+        //这一页是写时复制页
+        uint64 mem = (uint64)kalloc();
+        if (mem == 0) {
+          return -1;
+        }
+        memset((void *) mem, 0, PGSIZE);
+        uint64 pa = PTE2PA(*pte);
+        memmove((char *)mem,(char *) pa, PGSIZE); //复制
+        uint64 perm = PTE_FLAGS(*pte);
+        perm = perm | PTE_W;
+        perm = perm & ~PTE_COW; //增加写权限，去掉写时复制
+        uvmunmap(pagetable, va0, 1, 1);  //do_free逻辑是否要改？
+        if (mappages(pagetable, va0, PGSIZE, mem, perm) != 0) {
+          kfree((void *) mem);
+          return -1;
+        }
+        pa0 = (uint64)mem;
+      } else {
+        return -1;
+      }
+    }
       
     n = PGSIZE - (dstva - va0);
     if(n > len)
@@ -458,6 +492,31 @@ vmfault(pagetable_t pagetable, uint64 va, int read)
   if (va >= p->sz)
     return 0;
   va = PGROUNDDOWN(va);
+
+  pte_t *pte = walk(pagetable, va, 0);
+  
+  if (pte != 0 && (*pte & PTE_COW) != 0 && (*pte & PTE_V) != 0 && read == 0) {
+    //当前正在写入写时复制页面
+    mem = (uint64) kalloc();
+    if (mem == 0) {
+      setkilled(p);  //如果没有可用内存就杀掉进程
+      return 0;
+    }
+    memset((void *) mem, 0, PGSIZE);
+    uint64 pa = PTE2PA(*pte);
+    memmove((char *)mem,(char *) pa, PGSIZE); //复制
+    uint64 perm = PTE_FLAGS(*pte);
+    perm = perm | PTE_W;
+    perm = perm & ~PTE_COW; //增加写权限，去掉写时复制
+    uvmunmap(pagetable, va, 1, 1);  //do_free逻辑是否要改？
+    if (mappages(pagetable, va, PGSIZE, mem, perm) != 0) {
+      kfree((void *) mem);
+      setkilled(p);
+      return 0;
+    }
+    return mem;
+  }
+
   if(ismapped(pagetable, va)) {
     return 0;
   }
