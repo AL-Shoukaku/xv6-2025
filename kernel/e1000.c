@@ -107,25 +107,25 @@ e1000_transmit(char *buf, int len)
   acquire(&e1000_lock);
   uint32 tail = regs[E1000_TDT];  //获取 TX 尾部
   struct tx_desc *tx = &tx_ring[tail];
-  if ((tx->status & E1000_TXD_STAT_DD) != 0) {
-    //还有剩余的 tx。
-    tx->status &= ~E1000_TXD_STAT_DD;
-    while (tx->length > 0) {
-      //释放原来的缓存
-      kfree((void *)PGROUNDDOWN(tx->addr));
-      tx->length -= PGROUNDUP(tx->addr + 1) - tx->addr;
-      tx->addr = PGROUNDUP(tx->addr + 1);
-    }
-    tx->length = len;
-    tx->addr = (uint64)buf;
-    tx->cmd |= E1000_TXD_CMD_EOP | E1000_TXD_CMD_RS;
-    regs[E1000_TDT] = (regs[E1000_TDT] + 1) % TX_RING_SIZE;
-    printf("transmit sucess\n");
-  } else {
+  if ((tx->status & E1000_TXD_STAT_DD) == 0) {
+    printf("no free tx\n");
     release(&e1000_lock);
     return -1;
   }
+  tx->status &= ~E1000_TXD_STAT_DD;
+  while (tx->length > 0) {
+    //释放原来的缓存
+    kfree((void *)PGROUNDDOWN(tx->addr));
+    tx->length -= PGROUNDUP(tx->addr + 1) - tx->addr;
+    tx->addr = PGROUNDUP(tx->addr + 1);
+  }
+  tx->length = len;
+  tx->addr = (uint64)buf;
+  tx->cmd |= E1000_TXD_CMD_EOP | E1000_TXD_CMD_RS;
+  regs[E1000_TDT] = (regs[E1000_TDT] + 1) % TX_RING_SIZE;
+
   release(&e1000_lock);
+  printf("transmit sucess\n");
 
   return 0;
 }
@@ -139,8 +139,29 @@ e1000_recv(void)
   // Check for packets that have arrived from the e1000
   // Create and deliver a buf for each packet (using net_rx()).
   //
+  while (1) {
+    acquire(&e1000_lock);
+    uint32 tail = (regs[E1000_RDT] + 1) % RX_RING_SIZE;
+    struct rx_desc *rx = &rx_ring[tail];
 
-  printf("e100_recv\n");
+    //没有剩余的rx
+    if ((rx->status & E1000_RXD_STAT_DD) == 0) {
+      release(&e1000_lock);
+      return;
+    }
+
+    char *buf = (char *)rx->addr;
+    int len = (int)rx->length;
+
+    rx->addr = (uint64)kalloc();
+    rx->length = PGSIZE;
+    rx->status = 0;
+    regs[E1000_RDT] = tail;
+
+    release(&e1000_lock);
+
+    net_rx(buf, len); //里面会调用transmit,还会acquire,不能放临界区
+  }
 }
 
 void
