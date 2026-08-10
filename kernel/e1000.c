@@ -104,8 +104,29 @@ e1000_transmit(char *buf, int len)
   // return -1 on failure (e.g., there is no descriptor available)
   // so that the caller knows to free buf.
   //
+  acquire(&e1000_lock);
+  uint32 tail = regs[E1000_TDT];  //获取 TX 尾部
+  struct tx_desc *tx = &tx_ring[tail];
+  if ((tx->status & E1000_TXD_STAT_DD) != 0) {
+    //还有剩余的 tx。
+    tx->status &= ~E1000_TXD_STAT_DD;
+    while (tx->length > 0) {
+      //释放原来的缓存
+      kfree((void *)PGROUNDDOWN(tx->addr));
+      tx->length -= PGROUNDUP(tx->addr + 1) - tx->addr;
+      tx->addr = PGROUNDUP(tx->addr + 1);
+    }
+    tx->length = len;
+    tx->addr = (uint64)buf;
+    tx->cmd |= E1000_TXD_CMD_EOP | E1000_TXD_CMD_RS;
+    regs[E1000_TDT] = (regs[E1000_TDT] + 1) % TX_RING_SIZE;
+    printf("transmit sucess\n");
+  } else {
+    release(&e1000_lock);
+    return -1;
+  }
+  release(&e1000_lock);
 
-  
   return 0;
 }
 
@@ -119,6 +140,7 @@ e1000_recv(void)
   // Create and deliver a buf for each packet (using net_rx()).
   //
 
+  printf("e100_recv\n");
 }
 
 void
