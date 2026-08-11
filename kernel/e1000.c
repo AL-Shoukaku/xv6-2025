@@ -113,19 +113,15 @@ e1000_transmit(char *buf, int len)
     return -1;
   }
   tx->status &= ~E1000_TXD_STAT_DD;
-  while (tx->length > 0) {
-    //释放原来的缓存
-    kfree((void *)PGROUNDDOWN(tx->addr));
-    tx->length -= PGROUNDUP(tx->addr + 1) - tx->addr;
-    tx->addr = PGROUNDUP(tx->addr + 1);
-  }
+  if (tx->addr != 0)
+    kfree((void *)PGROUNDDOWN(tx->addr));   // 释放buf
+
   tx->length = len;
   tx->addr = (uint64)buf;
   tx->cmd |= E1000_TXD_CMD_EOP | E1000_TXD_CMD_RS;
   regs[E1000_TDT] = (regs[E1000_TDT] + 1) % TX_RING_SIZE;
 
   release(&e1000_lock);
-  printf("transmit sucess\n");
 
   return 0;
 }

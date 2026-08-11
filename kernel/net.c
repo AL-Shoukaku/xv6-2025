@@ -10,12 +10,33 @@
 #include "file.h"
 #include "net.h"
 
+struct udp_port {
+  uint16 port;
+  uint16 num;
+  struct spinlock lock;
+  struct packet* head;
+  struct packet* tail;
+  struct udp_port* next;
+};
+
+struct packet {
+  char buf[4070];
+  struct packet *next;
+  int src;
+  short sport;
+  int len;
+};
+
 // xv6's ethernet and IP addresses
 static uint8 local_mac[ETHADDR_LEN] = { 0x52, 0x54, 0x00, 0x12, 0x34, 0x56 };
 static uint32 local_ip = MAKE_IP_ADDR(10, 0, 2, 15);
 
 // qemu host's ethernet address.
 static uint8 host_mac[ETHADDR_LEN] = { 0x52, 0x55, 0x0a, 0x00, 0x02, 0x02 };
+
+#define NPORT 16
+static struct udp_port ports[NPORT];       // 静态池，不占 kalloc 页
+static struct udp_port *portlist;          // 仍可用 ->next 串成链表
 
 static struct spinlock netlock;
 
@@ -37,7 +58,22 @@ sys_bind(void)
   //
   // Your code here.
   //
+  int portNum;
+  argint(0, &portNum);
 
+  for(int i = 0; i < NPORT; i++){
+    if(ports[i].port == portNum)
+      return 0;                              // 已绑定过
+    if(ports[i].port == 0){                  // 空 slot（测试端口都 ≥1000，0 可作空标记）
+      initlock(&ports[i].lock, "spinlock");
+      ports[i].port = portNum;
+      ports[i].head = ports[i].tail = 0;
+      ports[i].num = 0;
+      ports[i].next = portlist;              // 挂到链表头
+      portlist = &ports[i];
+      return 0;
+    }
+  }
   return -1;
 }
 
@@ -52,7 +88,6 @@ sys_unbind(void)
   //
   // Optional: Your code here.
   //
-
   return 0;
 }
 
@@ -77,7 +112,52 @@ sys_recv(void)
   //
   // Your code here.
   //
-  return -1;
+  int dport;
+  int maxlen;
+  uint64 srcaddr;
+  uint64 sportaddr;
+  uint64 bufaddr;
+  argint(0, &dport);
+  argaddr(1, &srcaddr);
+  argaddr(2, &sportaddr);
+  argaddr(3, &bufaddr);
+  argint(4, &maxlen);
+
+  // 找到端口号对应的port
+  struct udp_port *port = portlist;
+  while (1) {
+    if(port == 0) {
+      return -1;
+    }
+    if (port->port == dport) {
+      break;
+    }
+    port = port->next;
+  }
+
+  //如果分组为空则阻塞
+  acquire(&port->lock);
+  while(port->num == 0) {
+    sleep(port, &port->lock);
+  }
+
+  // 取出包
+  struct packet *packet = port->head;
+  port->head = port->head->next;
+  if (port->head == 0) {
+    port->tail = 0;
+  }
+  port->num--;
+
+  //复制到用户空间
+  copyout(myproc()->pagetable, srcaddr, (char *)&packet->src, 4);
+  copyout(myproc()->pagetable, sportaddr, (char *)&packet->sport, 2);
+  int bytes = (packet->len > maxlen) ? maxlen : packet->len;
+  copyout(myproc()->pagetable, bufaddr, packet->buf, bytes);
+
+  kfree((void *)packet);
+  release(&port->lock);
+  return bytes;
 }
 
 // This code is lifted from FreeBSD's ping.c, and is copyright by the Regents
@@ -191,7 +271,57 @@ ip_rx(char *buf, int len)
   //
   // Your code here.
   //
-  
+
+  struct eth *eth = (struct eth *) buf;
+  struct ip *ip = (struct ip *)(eth + 1);
+
+  if (ip->ip_p != IPPROTO_UDP) {  
+    // 不是UDP协议，直接抛弃
+    kfree(buf);
+    return;
+  }
+
+  //判断udp端口号是否对应
+  struct udp *udp = (struct udp *)(ip + 1);
+  int portNum = ntohs(udp->dport);
+  struct udp_port *port = portlist;
+  while (1) {
+    if (port == 0) {
+      kfree(buf);
+      return;
+    }
+    if (port->port == portNum) {
+      break;
+    }
+    port = port->next;
+  }
+
+  //端口号对应，检查数量后插入
+  acquire(&port->lock);
+  if (port->num >= 16) {
+    release(&port->lock);
+    kfree(buf);
+    return;
+  }
+  struct packet *packet = (struct packet *)kalloc();
+  memmove(packet->buf, (char *)(udp + 1), len - sizeof(struct eth) - sizeof(struct ip) - sizeof(struct udp));
+  packet->len = ntohs(udp->ulen) - sizeof(struct udp);
+  packet->next = 0;
+  packet->src = ntohl(ip->ip_src);
+  packet->sport = ntohs(udp->sport);
+  if (port->tail == 0) {
+    port->head = packet;
+    port->tail =packet;
+  } else {
+    port->tail->next = packet;
+    port->tail = packet;
+  }
+  port->num++;
+  kfree(buf);
+
+  //唤醒对应进程
+  wakeup(port);
+  release(&port->lock);
 }
 
 //

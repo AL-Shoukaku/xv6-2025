@@ -6,6 +6,7 @@
 
 ## 实验概览
 
+本实验使用`qemu`模拟出的 e1000 网卡设备和以太网(LAN),实现了设备的**驱动程序**,并在此基础上实现了一个简单的 **UDP 协议栈**。
 
 可以在`task.md`中查看整个实验内容。
 
@@ -87,6 +88,41 @@ reading from file packets.pcap, link-type EN10MB (Ethernet), snapshot length 655
 
 ### 2. Part Two: UDP Receive (moderate)
 
+**涉及文件:`kernel/net.c`**
+
+这一部分实现了`sys_bind()`,`sys_recv()`和`ip_rx()`这三个函数，它们分别负责**端口号的绑定**,**分组的接收**以及**分组的入队出队**。
+
+函数的具体功能如下:
+- `sys_band()`:系统调用`bind(short port)`的核心实现函数,用于**设置并初始化一个要监听的端口号**`port`，以便后续的`recv(port, ...)`可以从该端口接收分组。
+- `ip_rx(char *buf, int len)`:负责识别分组是否为 UDP 分组，对应端口号是否已经绑定，以及对应的分组队列是否已满(最多 16 个)。**不满足条件的分组全部抛弃**。满足条件的则将缓冲区`buf`中的负载数据入队到对应端口号的分组队列中。
+- `sys_recv()`:系统调用`recv(short dport, int *src, short *sport, char *buf, int maxlen)`: 用于从`dport`对应端口的接收分组队列中取出**到达时间最早的 UDP 分组**，将其源 IP，源端口号分别复制到`*src`和`*sport`中，并将分组的负载部分复制到`buf`中，最多复制`maxlen`字节。该系统调用在成功时返回复制的字节数，失败时返回 -1。注意`src`和`sport`以及`buf`都是**用户空间的虚拟地址**。此外如果`dport`对应的接收分组队列为空，则该系统调用会**阻塞**，直到有新的分组到达。
+
+此外还在`kernel/net.c`中维护了两个数据结构:
+- `struct udp_port`:用于维护一个端口号的绑定状态以及对应的接
+- `struct packet`:用于维护一个分组
+
+#### 测试方法
+
+先在窗口 A 中允许`python3 nettest.py grade`,然后在窗口 B 中运行 xv6 并执行`nettest grade`，此时窗口 B 会输出测试结果：
+
+```bash
+txone: sending one packet
+arp_rx: received an ARP packet
+ip_rx: received an IP packet
+ping0: starting
+ping0: OK
+ping1: starting
+ping1: OK
+ping2: starting
+ping2: OK
+ping3: starting
+ping3: OK
+dns: starting
+DNS arecord for pdos.csail.mit.edu. is 128.52.129.126
+dns: OK
+free: OK
+```
+
 ---
 
 ## 参考资料
@@ -98,5 +134,28 @@ reading from file packets.pcap, link-type EN10MB (Ethernet), snapshot length 655
 ## 测试结果
 以下是`make grade`的测试结果
 ```bash
-
+== Test running nettest ==
+$ make qemu-gdb
+(19.1s)
+== Test   nettest: txone ==
+  nettest: txone: OK
+== Test   nettest: arp_rx ==
+  nettest: arp_rx: OK
+== Test   nettest: ip_rx ==
+  nettest: ip_rx: OK
+== Test   nettest: ping0 ==
+  nettest: ping0: OK
+== Test   nettest: ping1 ==
+  nettest: ping1: OK
+== Test   nettest: ping2 ==
+  nettest: ping2: OK
+== Test   nettest: ping3 ==
+  nettest: ping3: OK
+== Test   nettest: dns ==
+  nettest: dns: OK
+== Test   nettest: free ==
+  nettest: free: OK
+== Test time ==
+time: OK
+Score: 171/171
 ```
