@@ -120,33 +120,103 @@ release(struct spinlock *lk)
   pop_off();
 }
 
+void
+newacquire(struct spinlock *lk)
+{
+  //push_off(); // disable interrupts to avoid deadlock.
+  //if(holding(lk))
+  //  panic("acquire");
+
+
+
+  // On RISC-V, sync_lock_test_and_set turns into an atomic swap:
+  //   a5 = 1
+  //   s1 = &lk->locked
+  //   amoswap.w.aq a5, a5, (s1)
+  while(__sync_lock_test_and_set(&lk->locked, 1) != 0) {
+
+  }
+
+  // Tell the C compiler and the processor to not move loads or stores
+  // past this point, to ensure that the critical section's memory
+  // references happen strictly after the lock is acquired.
+  // On RISC-V, this emits a fence instruction.
+  __sync_synchronize();
+
+  // Record info about lock acquisition for holding() and debugging.
+  //lk->cpu = mycpu();
+}
+
+void
+newrelease(struct spinlock *lk)
+{
+  //if(!holding(lk))
+  //  panic("release");
+
+  //lk->cpu = 0;
+
+  // Tell the C compiler and the CPU to not move loads or stores
+  // past this point, to ensure that all the stores in the critical
+  // section are visible to other CPUs before the lock is released,
+  // and that loads in the critical section occur strictly before
+  // the lock is released.
+  // On RISC-V, this emits a fence instruction.
+  __sync_synchronize();
+
+  // Release the lock, equivalent to lk->locked = 0.
+  // This code doesn't use a C assignment, since the C standard
+  // implies that an assignment might be implemented with
+  // multiple store instructions.
+  // On RISC-V, sync_lock_release turns into an atomic swap:
+  //   s1 = &lk->locked
+  //   amoswap.w zero, zero, (s1)
+  __sync_lock_release(&lk->locked);
+
+  //pop_off();
+}
+
 #ifdef LAB_LOCK
 static void
 read_acquire_inner(struct rwspinlock *rwlk)
 {
   // Replace this with your implementation.
-  acquire(&rwlk->l);
+  newacquire(&rwlk->lock);
+  newacquire(&rwlk->rlock);
+  if (rwlk->reader == 0) {
+    newacquire(&rwlk->wlock);
+  }
+  rwlk->reader++;
+  newrelease(&rwlk->rlock);
+  newrelease(&rwlk->lock);
 }
 
 static void
 read_release_inner(struct rwspinlock *rwlk)
 {
   // Replace this with your implementation.
-  release(&rwlk->l);
+  newacquire(&rwlk->rlock);
+  rwlk->reader--;
+  if (rwlk->reader == 0) {
+    newrelease(&rwlk->wlock);
+  }
+  newrelease(&rwlk->rlock);
 }
 
 static void
 write_acquire_inner(struct rwspinlock *rwlk)
 {
   // Replace this with your implementation.
-  acquire(&rwlk->l);
+  newacquire(&rwlk->lock);
+  newacquire(&rwlk->wlock);
+  newrelease(&rwlk->lock);
 }
 
 static void
 write_release_inner(struct rwspinlock *rwlk)
 {
   // Replace this with your implementation.
-  release(&rwlk->l);
+  newrelease(&rwlk->wlock);
+
 }
 
 void
@@ -181,7 +251,10 @@ void
 initrwlock(struct rwspinlock *rwlk)
 {
   // Replace this with your implementation.
-  initlock(&rwlk->l, "rwlk");
+  initlock(&rwlk->rlock, "rlock");
+  initlock(&rwlk->wlock, "wlock");
+  initlock(&rwlk->lock, "lock");
+  rwlk->reader = 0;
 }
 
 // Test rwspinlock implementation.

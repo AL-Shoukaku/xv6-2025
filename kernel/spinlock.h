@@ -1,4 +1,5 @@
 // Mutual exclusion lock.
+#define LAB_LOCK 1
 struct spinlock {
   uint locked;       // Is the lock held?
 
@@ -15,6 +16,9 @@ struct spinlock {
 // Reader-writer lock.
 struct rwspinlock {
   // Replace this with your implementation.
-  struct spinlock l;
+  struct spinlock rlock;
+  struct spinlock wlock;
+  struct spinlock lock;
+  uint64 reader;
 };
 #endif
