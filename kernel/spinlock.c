@@ -120,103 +120,57 @@ release(struct spinlock *lk)
   pop_off();
 }
 
-void
-newacquire(struct spinlock *lk)
-{
-  //push_off(); // disable interrupts to avoid deadlock.
-  //if(holding(lk))
-  //  panic("acquire");
-
-
-
-  // On RISC-V, sync_lock_test_and_set turns into an atomic swap:
-  //   a5 = 1
-  //   s1 = &lk->locked
-  //   amoswap.w.aq a5, a5, (s1)
-  while(__sync_lock_test_and_set(&lk->locked, 1) != 0) {
-
-  }
-
-  // Tell the C compiler and the processor to not move loads or stores
-  // past this point, to ensure that the critical section's memory
-  // references happen strictly after the lock is acquired.
-  // On RISC-V, this emits a fence instruction.
-  __sync_synchronize();
-
-  // Record info about lock acquisition for holding() and debugging.
-  //lk->cpu = mycpu();
-}
-
-void
-newrelease(struct spinlock *lk)
-{
-  //if(!holding(lk))
-  //  panic("release");
-
-  //lk->cpu = 0;
-
-  // Tell the C compiler and the CPU to not move loads or stores
-  // past this point, to ensure that all the stores in the critical
-  // section are visible to other CPUs before the lock is released,
-  // and that loads in the critical section occur strictly before
-  // the lock is released.
-  // On RISC-V, this emits a fence instruction.
-  __sync_synchronize();
-
-  // Release the lock, equivalent to lk->locked = 0.
-  // This code doesn't use a C assignment, since the C standard
-  // implies that an assignment might be implemented with
-  // multiple store instructions.
-  // On RISC-V, sync_lock_release turns into an atomic swap:
-  //   s1 = &lk->locked
-  //   amoswap.w zero, zero, (s1)
-  __sync_lock_release(&lk->locked);
-
-  //pop_off();
-}
-
 #ifdef LAB_LOCK
 static void
 read_acquire_inner(struct rwspinlock *rwlk)
 {
   // Replace this with your implementation.
-  newacquire(&rwlk->lock);
-  newacquire(&rwlk->rlock);
-  if (rwlk->reader == 0) {
-    newacquire(&rwlk->wlock);
+  while (1) {
+    if (__atomic_load_n(&rwlk->haswriter, __ATOMIC_SEQ_CST)) 
+      continue; //有写者
+
+    int expect = __atomic_load_n(&rwlk->status, __ATOMIC_SEQ_CST);
+    if (expect < 0) 
+      continue; //写者持有锁
+    // 先加载状态到expect，然后当status仍为该值时写入expect + 1，如果status已经改变则失败
+    if (__atomic_compare_exchange_n(&rwlk->status, &expect, expect + 1, 0, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST)) {
+      break;
+    }
   }
-  rwlk->reader++;
-  newrelease(&rwlk->rlock);
-  newrelease(&rwlk->lock);
 }
 
 static void
 read_release_inner(struct rwspinlock *rwlk)
 {
   // Replace this with your implementation.
-  newacquire(&rwlk->rlock);
-  rwlk->reader--;
-  if (rwlk->reader == 0) {
-    newrelease(&rwlk->wlock);
-  }
-  newrelease(&rwlk->rlock);
+  //释放锁时直接读者数 - 1
+  __atomic_sub_fetch(&rwlk->status, 1, __ATOMIC_SEQ_CST);
 }
 
 static void
 write_acquire_inner(struct rwspinlock *rwlk)
 {
   // Replace this with your implementation.
-  newacquire(&rwlk->lock);
-  newacquire(&rwlk->wlock);
-  newrelease(&rwlk->lock);
+  while (1) {
+    //先通知有写者
+    __atomic_store_n(&rwlk->haswriter, 1, __ATOMIC_SEQ_CST);
+    int expect = 0;
+    //当 status 为 0 时写入 -1，获取写锁
+    if (__atomic_compare_exchange_n(&rwlk->status, &expect, -1, 0, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST)) {
+      break;
+    }
+  }
+
 }
 
 static void
 write_release_inner(struct rwspinlock *rwlk)
 {
   // Replace this with your implementation.
-  newrelease(&rwlk->wlock);
-
+  // 释放写锁，status 置 0
+  __atomic_store_n(&rwlk->status, 0, __ATOMIC_SEQ_CST);
+    // 释放写锁后，haswriter置 0
+  __atomic_store_n(&rwlk->haswriter, 0, __ATOMIC_SEQ_CST);
 }
 
 void
@@ -251,10 +205,8 @@ void
 initrwlock(struct rwspinlock *rwlk)
 {
   // Replace this with your implementation.
-  initlock(&rwlk->rlock, "rlock");
-  initlock(&rwlk->wlock, "wlock");
-  initlock(&rwlk->lock, "lock");
-  rwlk->reader = 0;
+  rwlk->haswriter = 0;
+  rwlk->status = 0;
 }
 
 // Test rwspinlock implementation.

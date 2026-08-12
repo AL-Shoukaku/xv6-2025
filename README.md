@@ -5,6 +5,11 @@
 
 ## 实验概览
 
+本实验的主题是**锁(lock)**。
+
+在第一部分，我们会重新设计 xv6 的内存分配器，通过减少锁的竞争来提高性能。
+
+在第二部分，在 xv6 中用原子操作实现了**读写锁(写锁优先)**。
 
 可以在`task.md`中查看整个实验内容。
 
@@ -111,15 +116,96 @@ ALL TESTS PASSED
 
 ### 2. Read-write lock (moderate)
 
+**涉及文件:`kernel/spinlock.c`,`kernel/spinlock.h`**
+
+#### 核心功能
+
+这一部分实现了**读写锁(写锁优先)**，其结构体定义子在`kernel/spinlock.h`中。
+
+相关锁的操作函数在`kernel/spinlock.c`中，采用原子操作来实现，总共包括以下函数：
+
+- `init_rwlock(struct rwlock *lk)`：初始化读写锁。
+- `read_aquire(struct rwlock *lk)`：获取读锁。
+- `read_release(struct rwlock *lk)`：释放读锁。
+- `write_aquire(struct rwlock *lk)`：获取写锁。
+- `write_release(struct rwlock *lk)`：释放写锁。
+
+#### 测试方法
+
+在 xv6 中运行`rwlktest`来进行测试，最终的输出结果如下：
+
+```bash
+rwspinlock_test: step 1: initrwlock
+rwspinlock_test: step 2: concurrent read_acquire
+rwspinlock_test: step 3: concurrent read_release
+rwspinlock_test: step 4: prepare read_acquire for writer priority test
+rwspinlock_test: step 5: writer priority test
+rwspinlock_test: step 6: checking for concurrent readers/writers
+rwspinlock_test: step 7: checking for concurrent writers
+rwspinlock_test: step 8: acquiring multiple locks
+rwspinlock_test: step 9: releasing multiple locks
+rwspinlock_test: step 10: prepare read_acquire for multiple writer priority test
+rwspinlock_test: step 11: multiple writer priority test
+rwspinlock_test: step 12: prepare read_acquire for multiple writer priority test
+rwspinlock_test: step 13: multiple writer priority test
+rwspinlock_test: step 14: prepare read_acquire for multiple writer priority test
+rwspinlock_test: step 15: multiple writer priority test
+rwspinlock_test: step 16: prepare read_acquire for multiple writer priority test
+rwspinlock_test: step 17: multiple writer priority test
+rwspinlock_test: step 18: prepare read_acquire for multiple writer priority test
+rwspinlock_test: step 19: multiple writer priority test
+rwspinlock_test: step 20: prepare read_acquire for multiple writer priority test
+rwspinlock_test: step 21: multiple writer priority test
+rwspinlock_test: step 22: prepare read_acquire for multiple writer priority test
+rwspinlock_test: step 23: multiple writer priority test
+rwspinlock_test: step 24: prepare read_acquire for multiple writer priority test
+rwspinlock_test: step 25: multiple writer priority test
+rwspinlock_test: step 26: prepare read_acquire for multiple writer priority test
+rwspinlock_test: step 27: multiple writer priority test
+rwspinlock_test: step 28: prepare read_acquire for multiple writer priority test
+rwspinlock_test: step 29: multiple writer priority test
+rwspinlock_test: step 30: done
+rwspinlock_test(0): 0
+rwspinlock_test(2): 0
+rwspinlock_test(3): 0
+rwspinlock_test(1): 0
+rwlktest: 4/4 CPUs succeeded
+```
+
 ---
 
 ## 参考资料
 
 - [MIT 6.1810 课程主页](https://pdos.csail.mit.edu/6.1810/2025/index.html)
 - [xv6指导书](https://pdos.csail.mit.edu/6.1810/2025/xv6/book-riscv-rev5.pdf)
+- https://gcc.gnu.org/onlinedocs/gcc/_005f_005fatomic-Builtins.html
 
 ## 测试结果
 以下是`make grade`的测试结果
 ```bash
-
+== Test running kalloctest ==
+$ make qemu-gdb
+(102.1s)
+== Test   kalloctest: test1 ==
+  kalloctest: test1: OK
+== Test   kalloctest: test2 ==
+  kalloctest: test2: OK
+== Test   kalloctest: test3 ==
+  kalloctest: test3: OK
+== Test   kalloctest: test4 ==
+  kalloctest: test4: OK
+== Test kalloctest: sbrkmuch ==
+$ make qemu-gdb
+kalloctest: sbrkmuch: OK (12.5s)
+== Test running rwlktest ==
+$ make qemu-gdb
+(11.5s)
+== Test   rwlktest ==
+  rwlktest: OK
+== Test usertests ==
+$ make qemu-gdb
+usertests: OK (173.9s)
+== Test time ==
+time: OK
+Score: 100/100
 ```
