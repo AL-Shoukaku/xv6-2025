@@ -5,6 +5,10 @@
 #include "spinlock.h"
 #include "proc.h"
 #include "defs.h"
+#include "fs.h"
+#include "sleeplock.h"
+#include "file.h"
+#include "fcntl.h"
 
 struct cpu cpus[NCPU];
 
@@ -149,6 +153,7 @@ found:
   for (int i = 0;i < NVMA;i++) {
     memset(&p->vma[i], 0, sizeof(struct VMA));
   }
+  p->vma_sz = TRAPFRAME;  //自顶向下生长
 
   return p;
 }
@@ -293,6 +298,14 @@ kfork(void)
 
   pid = np->pid;
 
+  for (int i = 0;i < NVMA;i++) {
+    if (p->vma[i].valid) {
+      np->vma[i] = p->vma[i];
+      filedup(p->vma[i].file);
+    }
+  }
+  np->vma_sz = p->vma_sz;
+
   release(&np->lock);
 
   acquire(&wait_lock);
@@ -331,6 +344,31 @@ kexit(int status)
 
   if(p == initproc)
     panic("init exiting");
+
+  for (int i = 0;i < NVMA;i++) {
+    if (p->vma[i].valid) {
+      if (p->vma[i].flag == MAP_SHARED) {
+        struct inode *ip = p->vma[i].file->ip;
+        begin_op();
+        ilock(ip);
+        int len = p->vma[i].length;
+        if (p->vma[i].length > ip->size - p->vma[i].offset)
+          len = ip->size - p->vma[i].offset;
+        for (int j = 0; j < len; j += BSIZE){
+          uint64 addr = p->vma[i].addr + j;
+          pte_t *pte = walk(p->pagetable, addr, 0);
+          if (pte != 0 && (*pte & PTE_V)) {
+            writei(ip, 1, addr, p->vma[i].offset + j, BSIZE);
+          }
+        }
+        iunlock(ip);
+        end_op();
+      }
+      uvmunmap(p->pagetable, PGROUNDDOWN(p->vma[i].addr), p->vma[i].length / PGSIZE, 1);
+      fileclose(p->vma[i].file);
+      memset(&p->vma[i], 0, sizeof(struct VMA));
+    }
+  }
 
   // Close all open files.
   for(int fd = 0; fd < NOFILE; fd++){

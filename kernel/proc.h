@@ -85,6 +85,7 @@ struct VMA {
   uint64 length;
   int prot;
   int flag;
+  uint64 offset;
   struct file *file;
 };
 
@@ -114,4 +115,5 @@ struct proc {
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
   struct VMA vma[NVMA];
+  uint64 vma_sz;
 };

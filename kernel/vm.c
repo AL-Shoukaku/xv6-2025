@@ -457,10 +457,18 @@ vmfault(pagetable_t pagetable, uint64 va, int read)
 {
   uint64 mem;
   struct proc *p = myproc();
+  struct VMA *vma = 0;
+  for (int i = 0;i < NVMA;i++) {
+    if (p->vma[i].valid && p->vma[i].addr <= va && va < (p->vma[i].addr + p->vma[i].length)) {
+      //命中 vma
+      vma = &p->vma[i];
+      break;
+    }
+  }
 
-  if (va >= p->sz)
+  // 修改：大于 sz 且不属于vma的区域
+  if (va >= p->sz && vma == 0) 
     return 0;
-  uint64 oldva = va;
   va = PGROUNDDOWN(va);
   if(ismapped(pagetable, va)) {
     return 0;
@@ -470,24 +478,21 @@ vmfault(pagetable_t pagetable, uint64 va, int read)
     return 0;
   memset((void *) mem, 0, PGSIZE);
   int perm = PTE_W|PTE_U|PTE_R;
-  for (int i = 0;i < NVMA;i++) {
-    if (p->vma[i].valid && p->vma[i].addr <= va && va < (p->vma[i].addr + p->vma[i].length)) {
-      // 当前在 vma 的映射范围里
-      struct inode *ip = p->vma[i].file->ip;
-      ilock(ip);
-      readi(ip, 0, mem, oldva - p->vma[i].addr, PGSIZE);
-      iunlock(ip);
-      perm = PTE_U;
-      if (p->vma[i].flag & PROT_READ) 
-        perm |= PTE_R;
-      if (p->vma[i].flag & PROT_WRITE)
-        perm |= PTE_W;
-      if (p->vma[i].flag & PROT_EXEC)
-        perm |= PTE_X;
-      break;
-    }
+  if (vma != 0) {
+    struct inode *ip = vma->file->ip;
+    ilock(ip);
+    readi(ip, 0, mem, va - vma->addr + vma->offset, PGSIZE);
+    iunlock(ip);
+    perm = PTE_U;
+    if (vma->prot & PROT_READ) 
+      perm |= PTE_R;
+    if (vma->prot & PROT_WRITE)
+      perm |= PTE_W;
+    if (vma->prot & PROT_EXEC)
+      perm |= PTE_X;
   }
-  if (mappages(p->pagetable, va, PGSIZE, mem, PTE_W|PTE_U|PTE_R) != 0) {
+
+  if (mappages(p->pagetable, va, PGSIZE, mem, perm) != 0) {
     kfree((void *)mem);
     return 0;
   }

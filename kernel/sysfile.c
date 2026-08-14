@@ -69,6 +69,11 @@ sys_mmap(void) {
   }
   argint(5, &offset);
 
+  if ((f->readable == 0 && (prot & PROT_READ)) || (f->writable == 0 && (prot & PROT_WRITE) && !(flags & MAP_PRIVATE))) {
+    //权限不对
+    return -1;
+  }
+
   struct proc *p = myproc();
   struct VMA *vma = 0;
 
@@ -77,23 +82,73 @@ sys_mmap(void) {
       vma = &p->vma[i];
     }
   }
-  if (vma == 0 || p->sz + len > MAXVA)
+  if (vma == 0)
     return -1;
-  
+
   vma->valid = 1;
-  vma->addr = p->sz;
   vma->length = len;
   vma->prot = prot;
   vma->flag = flags;
   vma->file = f;
-  p->sz += len;
-  f->ref++;
+  vma->offset = offset;
+  //自顶向下生长
+  p->vma_sz -= PGROUNDUP(len);
+  vma->addr = p->vma_sz;
+
+  filedup(f);
 
   return vma->addr;
 }
 
 uint64
 sys_munmap(void) {
+  uint64 addr;
+  int len;
+  argaddr(0, &addr);
+  argint(1, &len);
+
+  struct proc *p = myproc();
+  for (int i = 0;i < NVMA;i++) {
+    if (addr >= p->vma[i].addr && addr + len <= (p->vma[i].addr + p->vma[i].length)) {
+      if (p->vma[i].flag == MAP_SHARED) {
+        struct inode *ip = p->vma[i].file->ip;
+        begin_op();
+        ilock(ip);
+        //不能写出文件的范围
+        int newlen = len;
+        if (len > ip->size - (p->vma[i].offset + addr - p->vma[i].addr)) {
+          newlen = ip->size - (p->vma[i].offset + addr - p->vma[i].addr);
+        }
+        for (int j = 0;j < newlen; j += BSIZE) {
+          uint64 newaddr = addr + j;
+          pte_t *pte = walk(p->pagetable, newaddr, 0);
+          if (pte != 0 && (*pte & PTE_V)) {
+            writei(ip, 1, newaddr, p->vma[i].offset + newaddr - p->vma[i].addr, BSIZE);
+          }
+        }
+
+        iunlock(ip);
+        end_op();
+      }
+      uvmunmap(p->pagetable, PGROUNDDOWN(addr), len / PGSIZE, 1);
+      if (addr == p->vma[i].addr && len == p->vma[i].length) {
+        fileclose(p->vma[i].file);
+        memset(&p->vma[i], 0, sizeof(struct VMA));
+      } else if (addr == p->vma[i].addr) {
+        //从头部开始
+        p->vma[i].addr += len;
+        p->vma[i].offset += len;
+        p->vma[i].length -= len;
+      } else if (addr + len == p->vma[i].addr + p->vma[i].length) {
+        //从尾部开始
+        p->vma[i].length -= len;
+      } else {
+          printf("unddddd\n");
+        return -1;
+      }
+      return 0;
+    }
+  }
   return -1;
 }
 
