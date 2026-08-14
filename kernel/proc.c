@@ -145,6 +145,10 @@ found:
   memset(&p->context, 0, sizeof(p->context));
   p->context.ra = (uint64)forkret;
   p->context.sp = p->kstack + PGSIZE;
+  // 初始化字段
+  for (int i = 0;i < NVMA;i++) {
+    memset(&p->vma[i], 0, sizeof(struct VMA));
+  }
 
   return p;
 }

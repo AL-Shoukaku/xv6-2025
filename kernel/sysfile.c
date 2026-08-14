@@ -53,7 +53,43 @@ fdalloc(struct file *f)
 
 uint64
 sys_mmap(void) {
-  return -1;
+  uint64 addr;
+  int len;
+  int prot;
+  int flags;
+  struct file* f;
+  int offset;
+  
+  argaddr(0, &addr);
+  argint(1, &len);
+  argint(2, &prot);
+  argint(3, &flags);
+  if (argfd(4, 0, &f) < 0) {
+    return -1;
+  }
+  argint(5, &offset);
+
+  struct proc *p = myproc();
+  struct VMA *vma = 0;
+
+  for (int i = 0;i < NVMA;i++) {
+    if (p->vma[i].valid == 0) {
+      vma = &p->vma[i];
+    }
+  }
+  if (vma == 0 || p->sz + len > MAXVA)
+    return -1;
+  
+  vma->valid = 1;
+  vma->addr = p->sz;
+  vma->length = len;
+  vma->prot = prot;
+  vma->flag = flags;
+  vma->file = f;
+  p->sz += len;
+  f->ref++;
+
+  return vma->addr;
 }
 
 uint64
