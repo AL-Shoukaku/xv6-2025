@@ -52,6 +52,16 @@ fdalloc(struct file *f)
 }
 
 uint64
+sys_mmap(void) {
+  return -1;
+}
+
+uint64
+sys_munmap(void) {
+  return -1;
+}
+
+uint64
 sys_dup(void)
 {
   struct file *f;
