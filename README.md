@@ -1,16 +1,16 @@
 # MIT 6.1810 Lab 2: Syscall
 
-该分支是我在MIT6.1810实验中lab2的实验代码.
+该分支是我在 MIT 6.1810 实验中 Lab 2 的实验代码。
 
 ---
 
 ## 实验概览
 
-本实验的核心内容是熟悉用 gdb 调试 xv6 内核的方法以及在 xv6 中实现系统调用的整个流程，最后用一个攻击 xv6 的任务来展现内核 bug 可能会带来的严重后果。
+本实验的核心内容是熟悉用 GDB 调试 xv6 内核的方法，理解 xv6 中实现系统调用的完整流程，并通过一个攻击 xv6 的任务体会内核 bug 可能带来的严重后果。
 
 ---
 ## 开发环境
-- **主机系统**：Windows 11 + WSL2（Ubuntu24.04）
+- **主机系统**：Windows 11 + WSL2（Ubuntu 24.04）
 ```bash
 $ sudo apt-get update && sudo apt-get upgrade
 $ sudo apt-get install git build-essential gdb-multiarch qemu-system-misc gcc-riscv64-linux-gnu binutils-riscv64-linux-gnu
@@ -28,22 +28,22 @@ make grade
 
 ## 已实现的功能
 
-### 1.Using gdb(easy)
+### 1. Using GDB (easy)
 
-**涉及文件：answers-syscall.txt**
+**涉及文件：`answers-syscall.txt`**
 
-这部分主要是学习使用 gdb 来调试 xv6 系统，并回答 6 个问题，问题与答案已经写在`answers-syscall.txt`中。
+这部分主要是学习使用 GDB 调试 xv6 系统，并回答 6 个问题，问题与答案已经写在 `answers-syscall.txt` 中。
 
-#### 使用 gdb 来调试 xv6
+#### 使用 GDB 来调试 xv6
 
-首先在一个窗口 A 里运行`make qemu-gdb`来以调试模式来启动 xv6，然后在**另一个**窗口 B 里运行`gdb-multiarch`来连接到 xv6 的调试端口即可开始调试。
+首先在窗口 A 中运行 `make qemu-gdb`，以调试模式启动 xv6；随后在**另一个**窗口 B 中运行 `gdb-multiarch`，连接到 xv6 的调试端口即可开始调试。
 
-### 2.Sandbox a command(moderate)
+### 2. Sandbox a command (moderate)
 
-**涉及文件：`user/sandbox.c`，`user/user.h`，`user/usys.pl`，`kernel/syscall.h`，`kernel/sysproc.c`，`kernel/proc.h`，`kernel/proc.c`，`kernel/syscall.c`,`Makefile`**
+**涉及文件：`user/sandbox.c`，`user/user.h`，`user/usys.pl`，`kernel/syscall.h`，`kernel/sysproc.c`，`kernel/proc.h`，`kernel/proc.c`，`kernel/syscall.c`，`Makefile`**
 
 
-#### sandbox指令
+#### sandbox 指令
 
 **使用方法：**
 
@@ -51,53 +51,53 @@ make grade
 sandbox <mask> <path> <cmd> <arg1> <arg2> ...
 ```
 
-- `mask`:掩码，用于指定被禁用的系统调用。
-- `path`:在本处恒为`-`
-- `cmd`:执行的命令名字
-- `arg`:命令`cmd`的参数
+- `mask`：掩码，用于指定被禁用的系统调用。
+- `path`：在本处恒为 `-`。
+- `cmd`：执行的命令名字。
+- `arg`：命令 `cmd` 的参数。
 
 **具体功能：**
 
-执行指令`cmd`，并在执行过程中禁用掩码`mask`所指定的系统调用，其中`mask`的第 i 位为 1 则表示系统调用号为 i 的系统调用被禁用
+执行指令 `cmd`，并在执行过程中禁用掩码 `mask` 所指定的系统调用，其中 `mask` 的第 i 位为 1 则表示系统调用号为 i 的系统调用被禁用。
 
 如果使用了被禁止的系统调用，则会产生错误并退出。
 
 
-#### interpose()系统调用
+#### interpose() 系统调用
 
-定义于`user/user.h`中，形式如下：
+定义于 `user/user.h` 中，形式如下：
 
-```C
+```c
 int interpose(int mask,const char *path);
 ```
 
-`mask`为掩码，`path`在此处恒定为`-`，用于指定该进程禁用的系统调用，成功时返回 0 .
+`mask` 为掩码，`path` 在此处恒定为 `-`，用于指定该进程禁用的系统调用，成功时返回 0。
 
-### 3.Sandbox with allowed pathnames(easy)
+### 3. Sandbox with allowed pathnames (easy)
 
-这一部分是让`sandbox`支持`path`参数
+这一部分是让 `sandbox` 支持 `path` 参数。
 
 ```bash
 sandbox <mask> <path> <cmd> <arg1> <arg2> ...
 ```
-- `path`:指定安全路径
+- `path`：指定安全路径。
 
-如果系统调用为`open()`或`exec()`，且被掩码`mask`所禁止，同时该调用的路径与`path`相同，则应当允许该调用的执行。
+如果系统调用为 `open()` 或 `exec()`，且被掩码 `mask` 所禁止，同时该调用的路径与 `path` 相同，则应当允许该调用执行。
 
-### 4.Attack xv6 (moderate)
+### 4. Attack xv6 (moderate)
 
-**涉及文件：`user/secret.c`,`user/attack.c`,`kernel/vm.c`,`kernel/kalloc.c`**
+**涉及文件：`user/secret.c`，`user/attack.c`，`kernel/vm.c`，`kernel/kalloc.c`**
 
-在`kernel/vm.c`和`kernel/kalloc.c`中有三处在 lab2 中编译时会被省略掉的代码，这回导致内核在释放和申请内存页面时不会对页面内容进行清空。
+在 `kernel/vm.c` 和 `kernel/kalloc.c` 中有三处代码会在 Lab 2 编译时被省略，这会导致内核在释放和申请内存页面时不会清空页面内容。
 
 #### secret
 
 ```bash
 secret <content>
 ```
-- `content`:要进行保密的内容。
+- `content`：要进行保密的内容。
 
-`secret`指令会申请 8 * 4096 bit的内存空间，并在最开始加入`"This may help."`，随后放入`content`的内容
+`secret` 指令会定义 8 页大小的全局缓冲区，并在最开始加入 `"This may help."`，随后放入 `content` 的内容。
 
 #### attack
 
@@ -105,7 +105,7 @@ secret <content>
 attack
 ```
 
-`attack`命令会输出上一次`secret`命令中的`content`内容，**一般要使用两次才能生效**。
+`attack` 命令会输出上一次 `secret` 命令中的 `content` 内容。在 `grader` 中会运行两次，只要**任意一次输出 `content` 即可**。
 
 
 ---
@@ -113,11 +113,11 @@ attack
 ## 参考资料
 
 - [MIT 6.1810 课程主页](https://pdos.csail.mit.edu/6.1810/2025/index.html)
-- [xv6指导书](https://pdos.csail.mit.edu/6.1810/2025/xv6/book-riscv-rev5.pdf)
+- [xv6 指导书](https://pdos.csail.mit.edu/6.1810/2025/xv6/book-riscv-rev5.pdf)
 
 
 ## 测试结果
-以下是`make grade`的测试结果
+以下是 `make grade` 的测试结果：
 ```bash
 == Test answers-syscall.txt ==
 answers-syscall.txt: OK
