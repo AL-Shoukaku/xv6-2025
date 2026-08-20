@@ -1,24 +1,25 @@
-# MIT 6.1810 Lab 7: locks
-该分支是我在MIT6.1810实验中 lab7 的实验代码.
+# MIT 6.1810 Lab 7: Locks
+
+该分支是我在 MIT 6.1810 实验中 Lab 7 的实验代码。
 
 ---
 
 ## 实验概览
 
-本实验的主题是**锁(lock)**。
+本实验的主题是**锁（lock）**。
 
 在第一部分，我们会重新设计 xv6 的内存分配器，通过减少锁的竞争来提高性能。
 
-在第二部分，在 xv6 中用原子操作实现了**读写锁(写锁优先)**。
+在第二部分，在 xv6 中用原子操作实现了**读写锁（写者优先）**。
 
-可以在`task.md`中查看整个实验内容。
+可以在 `task.md` 中查看整个实验内容。
 
 ---
 ## 开发环境
-- **主机系统**：Windows 11 + WSL2（Ubuntu24.04）
+- **主机系统**：Windows 11 + WSL2（Ubuntu 24.04）
 ```bash
 $ sudo apt-get update && sudo apt-get upgrade
-$ sudo apt-get install git build-essential gdb-multiarch qemu-system-misc gcc-riscv64-linux-gnu binutils-riscv64-linux-gnu 
+$ sudo apt-get install git build-essential gdb-multiarch qemu-system-misc gcc-riscv64-linux-gnu binutils-riscv64-linux-gnu
 ```
 
 ## 快速开始
@@ -36,7 +37,7 @@ make grade
 
 ### 1. Memory allocator (moderate)
 
-**涉及文件:`kernel/kalloc.c`**
+**涉及文件：`kernel/kalloc.c`**
 
 #### 核心功能
 
@@ -48,7 +49,7 @@ make grade
 
 #### 测试方法
 
-在 xv6 中运行`kalloctest`来进行测试，最终的输出结果如下：
+在 xv6 中运行 `kalloctest` 来进行测试，最终的输出结果如下：
 
 ```bash
 start test1
@@ -102,11 +103,11 @@ tot= 47135
 test4 OK
 ```
 
-这里面`test 1`和`test 4`会统计`acquire()`的次数，注意这个测试中电脑的工作负载会显著影响统计值，因此测试时**尽量把电脑里的其他程序关闭**。
+这里面 `test 1` 和 `test 4` 会统计 `acquire()` 的次数，注意这个测试中电脑的工作负载会显著影响统计值，因此测试时**尽量把电脑里的其他程序关闭**。
 
-`test 2`和`test 3`则负责测试窃取时的正确性，检查是否因窃取丢失页面。
+`test 2` 和 `test 3` 则负责测试窃取时的正确性，检查是否因窃取丢失页面。
 
-运行`usertests sbrkmuch`来测试我们的系统是否仍然能申请大量内存，结果如下：
+运行 `usertests sbrkmuch` 来测试我们的系统是否仍然能申请大量内存，结果如下：
 
 ```bash
 usertests starting
@@ -116,23 +117,23 @@ ALL TESTS PASSED
 
 ### 2. Read-write lock (moderate)
 
-**涉及文件:`kernel/spinlock.c`,`kernel/spinlock.h`**
+**涉及文件：`kernel/spinlock.c`、`kernel/spinlock.h`**
 
 #### 核心功能
 
-这一部分实现了**读写锁(写锁优先)**，其结构体定义子在`kernel/spinlock.h`中。
+这一部分实现了**读写锁（写者优先）**，其结构体定义在 `kernel/spinlock.h` 中。
 
-相关锁的操作函数在`kernel/spinlock.c`中，采用原子操作来实现，总共包括以下函数：
+相关锁的操作函数在 `kernel/spinlock.c` 中，采用原子操作来实现，总共包括以下函数：
 
-- `init_rwlock(struct rwlock *lk)`：初始化读写锁。
-- `read_aquire(struct rwlock *lk)`：获取读锁。
-- `read_release(struct rwlock *lk)`：释放读锁。
-- `write_aquire(struct rwlock *lk)`：获取写锁。
-- `write_release(struct rwlock *lk)`：释放写锁。
+- `initrwlock(struct rwspinlock *lk)`：初始化读写锁。
+- `read_acquire(struct rwspinlock *lk)`：获取读锁。
+- `read_release(struct rwspinlock *lk)`：释放读锁。
+- `write_acquire(struct rwspinlock *lk)`：获取写锁。
+- `write_release(struct rwspinlock *lk)`：释放写锁。
 
 #### 测试方法
 
-在 xv6 中运行`rwlktest`来进行测试，最终的输出结果如下：
+在 xv6 中运行 `rwlktest` 来进行测试，最终的输出结果如下：
 
 ```bash
 rwspinlock_test: step 1: initrwlock
@@ -177,11 +178,12 @@ rwlktest: 4/4 CPUs succeeded
 ## 参考资料
 
 - [MIT 6.1810 课程主页](https://pdos.csail.mit.edu/6.1810/2025/index.html)
-- [xv6指导书](https://pdos.csail.mit.edu/6.1810/2025/xv6/book-riscv-rev5.pdf)
+- [xv6 指导书](https://pdos.csail.mit.edu/6.1810/2025/xv6/book-riscv-rev5.pdf)
 - https://gcc.gnu.org/onlinedocs/gcc/_005f_005fatomic-Builtins.html
 
 ## 测试结果
-以下是`make grade`的测试结果
+以下是 `make grade` 的测试结果：
+
 ```bash
 == Test running kalloctest ==
 $ make qemu-gdb
