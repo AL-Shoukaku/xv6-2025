@@ -1,27 +1,29 @@
 # MIT 6.1810 Lab 8: file system
 
-> **注:** 本实验在 WSL2 环境下的运行速度较慢,建议在进行测试时尽量关闭后台应用
+> **注：** 本实验在 WSL2 环境下的运行速度较慢，建议在进行测试时尽量关闭后台应用。
 
-该分支是我在MIT6.1810实验中 lab8 的实验代码.
+该分支是我在 MIT 6.1810 实验中 Lab 8 的实验代码。
 
 ---
 
 ## 实验概览
 
-本次实验的主题是**文件系统(file system)**.
+本次实验的主题是**文件系统（file system）**。
 
-在实验的第一部分,我在 xv6 文件系统的基础之上进行修改,实现了将系统的**最大文件大小从 268 KB 拓展到了 65803 KB**
+在实验的第一部分，我在 xv6 文件系统的基础之上进行修改，实现了将系统的**最大文件大小从 268 KB 扩展到 65803 KB**。
 
-在实验的第二部分,我我在系统中添加了`symlink()`系统调用,实现了文件的软链接以及递归软链接访问
+在实验的第二部分，我在系统中添加了 `symlink()` 系统调用，实现了文件的软链接以及递归访问软链接。
 
-可以在`task.md`中查看整个实验内容。
+可以在 `task.md` 中查看整个实验内容。
 
 ---
+
 ## 开发环境
-- **主机系统**：Windows 11 + WSL2（Ubuntu24.04）
+- **主机系统**：Windows 11 + WSL2（Ubuntu 24.04）
+
 ```bash
 $ sudo apt-get update && sudo apt-get upgrade
-$ sudo apt-get install git build-essential gdb-multiarch qemu-system-misc gcc-riscv64-linux-gnu binutils-riscv64-linux-gnu 
+$ sudo apt-get install git build-essential gdb-multiarch qemu-system-misc gcc-riscv64-linux-gnu binutils-riscv64-linux-gnu
 ```
 
 ## 快速开始
@@ -39,19 +41,19 @@ make grade
 
 ### 1. Large files (moderate)
 
-**涉及文件:`kernel/fs.h`,`kernel/fs.c`,`kernel/file.h`**
+**涉及文件：`kernel/fs.h`、`kernel/fs.c`、`kernel/file.h`**
 
 #### 核心功能
 
-这一部分通过将 inode 的索引结构由 12 个直接 + 1 个一级间接改位 11 个直接 + 1 个一级间接 + 1 个二级间接,实现将 xv6 中的**最大文件大小由 268 KB 拓展为 65803 KB** .
+这一部分通过将 inode 的索引结构由 12 个直接 + 1 个一级间接改为 11 个直接 + 1 个一级间接 + 1 个二级间接，实现将 xv6 中的**最大文件大小由 268 KB 扩展为 65803 KB**。
 
-通过修改`bmap()`和`itrunc()`两个函数来适配新的索引结构
+通过修改 `bmap()` 和 `itrunc()` 两个函数来适配新的索引结构。
 
 #### 测试方法
 
-在 xv6 中运行`bigfile`来进行测试,正确的结果如下:
+在 xv6 中运行 `bigfile` 来进行测试，正确的结果如下：
 
-```C
+```bash
 ..................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................
 wrote 65803 blocks
 reading bigfile
@@ -61,27 +63,27 @@ bigfile done; ok
 
 ### 2. Symbolic links (moderate)
 
-**核心文件:`kernel/sysfile.c`**
+**核心文件：`kernel/sysfile.c`**
 
 #### 核心功能
 
-新增系统调用`symlink(char *target, char *path)`.
+新增系统调用 `symlink(char *target, char *path)`。
 
-**作用:** 实现软链接,将路径`path`软链接到目标文件`target`.
+**作用：** 实现软链接，将路径 `path` 软链接到目标文件 `target`。
 
-**说明:** 当`path`已经存在时失败,可以允许`target`不存在.
+**说明：** 当 `path` 已经存在时失败，可以允许 `target` 不存在。
 
-支持递归地访问软链接文件,但当次数大于 100 时被视作是**循环软链接**,调用失败.
+支持递归地访问软链接文件，但当次数大于 100 时被视作是**循环软链接**，调用失败。
 
-修修改了`open()`系统调用的实现逻辑,使其支持打开软链接文件.
+修改了 `open()` 系统调用的实现逻辑，使其支持打开软链接文件。
 
-如果调用`open()`时使用了`O_NOFOLLOW`模式,则会**直接打开软链接文件本身**,而不是打开链接到的目标文件
+如果调用 `open()` 时使用了 `O_NOFOLLOW` 模式，则会**直接打开软链接文件本身**，而不是打开链接到的目标文件。
 
 #### 测试方法
 
-在 xv6 中运行`symlinktest`,正确输出如下:
+在 xv6 中运行 `symlinktest`，正确输出如下：
 
-```C
+```bash
 Start: test symlinks
 test symlinks: ok
 Start: test concurrent symlinks
@@ -93,10 +95,12 @@ test concurrent symlinks: ok
 ## 参考资料
 
 - [MIT 6.1810 课程主页](https://pdos.csail.mit.edu/6.1810/2025/index.html)
-- [xv6指导书](https://pdos.csail.mit.edu/6.1810/2025/xv6/book-riscv-rev5.pdf)
+- [xv6 指导书](https://pdos.csail.mit.edu/6.1810/2025/xv6/book-riscv-rev5.pdf)
 
 ## 测试结果
-以下是`make grade`的测试结果
+
+以下是 `make grade` 的测试结果：
+
 ```bash
 == Test running bigfile (takes minutes) ==
 $ make qemu-gdb
