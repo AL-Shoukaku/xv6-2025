@@ -46,37 +46,55 @@ make qemu
 
 ### Lab 1: Xv6 and Unix Utilities
 
+lab1 主要是熟悉 xv6 的启动方式并**实现了 5 个用户程序**，包括 `sleep`,`sixfive`,`memdump`,`find` 和 `find -exec`.
+
 - [分支代码](https://github.com/AL-Shoukaku/xv6-2025/tree/util)
 
 ### Lab 2: Syscall
+
+lab2 的主题是**系统调用**，包括使用 gdb 调试内核，实现 `sandbox` 系统调用以及攻击 xv6 的内核漏洞。
 
 - [分支代码](https://github.com/AL-Shoukaku/xv6-2025/tree/syscall)
 
 ### Lab 3: Page Tables
 
+lab3 的主题是**页表**，包括分析与打印进程的页表信息，通过共享页面来优化 `getpid` 系统调用的性能，以及在 xv6 中实现超级页(superpage)。
+
 - [分支代码](https://github.com/AL-Shoukaku/xv6-2025/tree/pgtbl)
 
 ### Lab 4: Traps
+
+lab4 的主题是**陷阱处理**，包括阅读 RISC-v 汇编代码，解析内核栈来打印 backtrace 以及实现定时调用指定函数的 `sigalarm` 和 `sigreturn` 两个系统调用。
 
 - [分支代码](https://github.com/AL-Shoukaku/xv6-2025/tree/traps)
 
 ### Lab 5: Copy-on-Write Fork for xv6
 
+lab5 的主题是**写时复制（Copy-on-Write）**，综合前面的页表，陷入等机制，在 xv6 中实现写时复制机制。
+
 - [分支代码](https://github.com/AL-Shoukaku/xv6-2025/tree/cow)
 
 ### Lab 6: Networking
+
+lab6 的主题是**设备驱动**，包括完善 e1000 网卡的驱动程序以及实现一个简单的 UDP 协议栈。
 
 - [分支代码](https://github.com/AL-Shoukaku/xv6-2025/tree/net)
 
 ### Lab 7: Locks
 
+lab7 的主题是**锁**，包括优化 xv6 的内存分配器来减少锁的竞争，以及使用原子操作来实现一个读写锁(写者优先)。
+
 - [分支代码](https://github.com/AL-Shoukaku/xv6-2025/tree/lock)
 
 ### Lab 8: file system
 
+lab8 的主题是**文件系统**，包括修改 inode 索引结构来支持大文件，以及实现软链接功能。
+
 - [分支代码](https://github.com/AL-Shoukaku/xv6-2025/tree/fs)
 
 ### Lab 9: mmap
+
+lab9 的主题是**内存映射（mmap）**，包括实现 `mmap` 系统调用来将文件映射到用户地址空间并实现懒加载，以及实现 `munmap` 系统调用来解除映射。
 
 - [分支代码](https://github.com/AL-Shoukaku/xv6-2025/tree/mmap)
 
