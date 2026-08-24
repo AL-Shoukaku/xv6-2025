@@ -49,6 +49,7 @@ make qemu
 lab1 主要是熟悉 xv6 的启动方式并**实现了 5 个用户程序**，包括 `sleep`,`sixfive`,`memdump`,`find` 和 `find -exec`.
 
 - [分支代码](https://github.com/AL-Shoukaku/xv6-2025/tree/util)
+- [技术博客](https://al-shoukaku.github.io/2026/08/23/MIT6.1810-lab1/)
 
 ### Lab 2: Syscall
 
@@ -103,5 +104,5 @@ lab9 的主题是**内存映射（mmap）**，包括实现 `mmap` 系统调用�
 ## 参考资料
 
 - [2025 MIT 6.1810 课程主页](https://pdos.csail.mit.edu/6.1810/2025/index.html)
-- [xv6指导书](https://pdos.csail.mit.edu/6.1810/2025/xv6/book-riscv-rev5.pdf)
-
+- [xv6 指导书](https://pdos.csail.mit.edu/6.1810/2025/xv6/book-riscv-rev5.pdf)
+- [xv6 源代码](https://github.com/mit-pdos/xv6-riscv)
