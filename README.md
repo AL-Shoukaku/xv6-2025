@@ -56,6 +56,7 @@ lab1 主要是熟悉 xv6 的启动方式并**实现了 5 个用户程序**，包
 lab2 的主题是**系统调用**，包括使用 gdb 调试内核，实现 `sandbox` 系统调用以及攻击 xv6 的内核漏洞。
 
 - [分支代码](https://github.com/AL-Shoukaku/xv6-2025/tree/syscall)
+- [技术博客](https://al-shoukaku.github.io/2026/09/01/MIT6.1810-lab2/)
 
 ### Lab 3: Page Tables
 
