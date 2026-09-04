@@ -63,6 +63,7 @@ lab2 的主题是**系统调用**，包括使用 gdb 调试内核，实现 `sand
 lab3 的主题是**页表**，包括分析与打印进程的页表信息，通过共享页面来优化 `getpid` 系统调用的性能，以及在 xv6 中实现超级页(superpage)。
 
 - [分支代码](https://github.com/AL-Shoukaku/xv6-2025/tree/pgtbl)
+- [技术博客](https://al-shoukaku.github.io/2026/09/03/MIT6.1910-lab3/)
 
 ### Lab 4: Traps
 
