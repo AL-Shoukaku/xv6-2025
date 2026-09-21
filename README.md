@@ -77,6 +77,7 @@ lab4 的主题是**陷阱处理**，包括阅读 RISC-v 汇编代码，解析内
 lab5 的主题是**写时复制（Copy-on-Write）**，综合前面的页表，陷入等机制，在 xv6 中实现写时复制机制。
 
 - [分支代码](https://github.com/AL-Shoukaku/xv6-2025/tree/cow)
+- [技术博客](https://al-shoukaku.github.io/2026/09/21/MIT6.1810-lab5/)
 
 ### Lab 6: Networking
 
