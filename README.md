@@ -84,12 +84,14 @@ lab5 的主题是**写时复制（Copy-on-Write）**，综合前面的页表，�
 lab6 的主题是**设备驱动**，包括完善 e1000 网卡的驱动程序以及实现一个简单的 UDP 协议栈。
 
 - [分支代码](https://github.com/AL-Shoukaku/xv6-2025/tree/net)
+- [技术博客](https://al-shoukaku.github.io/2026/09/23/MIT6.1810-lab6/)
 
 ### Lab 7: Locks
 
 lab7 的主题是**锁**，包括优化 xv6 的内存分配器来减少锁的竞争，以及使用原子操作来实现一个读写锁(写者优先)。
 
 - [分支代码](https://github.com/AL-Shoukaku/xv6-2025/tree/lock)
+- [技术博客](https://al-shoukaku.github.io/2026/09/25/MIT6.1810-lab7/)
 
 ### Lab 8: file system
 
