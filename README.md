@@ -98,6 +98,7 @@ lab7 的主题是**锁**，包括优化 xv6 的内存分配器来减少锁的竞
 lab8 的主题是**文件系统**，包括修改 inode 索引结构来支持大文件，以及实现软链接功能。
 
 - [分支代码](https://github.com/AL-Shoukaku/xv6-2025/tree/fs)
+- [技术博客](https://al-shoukaku.github.io/2026/10/12/MIT6.1810-lab8/)
 
 ### Lab 9: mmap
 
