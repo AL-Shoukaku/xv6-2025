@@ -105,6 +105,7 @@ lab8 的主题是**文件系统**，包括修改 inode 索引结构来支持大�
 lab9 的主题是**内存映射（mmap）**，包括实现 `mmap` 系统调用来将文件映射到用户地址空间并实现懒加载，以及实现 `munmap` 系统调用来解除映射。
 
 - [分支代码](https://github.com/AL-Shoukaku/xv6-2025/tree/mmap)
+- [技术博客](https://al-shoukaku.github.io/2026/10/17/MIT6.1810-lab9/)
 
 ---
 
